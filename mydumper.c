@@ -106,6 +106,7 @@ gboolean use_savepoints = FALSE;
 gboolean success_on_1146 = FALSE;
 gboolean no_backup_locks = FALSE;
 gboolean insert_ignore = FALSE;
+gboolean replace_into = FALSE;
 
 
 GList *innodb_tables= NULL;
@@ -144,6 +145,7 @@ static GOptionEntry entries[] =
 	{ "regex", 'x', 0, G_OPTION_ARG_STRING, &regexstring, "Regular expression for 'db.table' matching", NULL},
 	{ "ignore-engines", 'i', 0, G_OPTION_ARG_STRING, &ignore_engines, "Comma delimited list of storage engines to ignore", NULL },
 	{ "insert-ignore", 'N', 0, G_OPTION_ARG_NONE, &insert_ignore, "Dump rows with INSERT IGNORE", NULL },
+	{ "replace-into", 'A', 0, G_OPTION_ARG_NONE, &replace_into, "Dump rows with REPLACE INTO", NULL },
 	{ "no-schemas", 'm', 0, G_OPTION_ARG_NONE, &no_schemas, "Do not dump table schemas with the data", NULL },
 	{ "no-data", 'd', 0, G_OPTION_ARG_NONE, &no_data, "Do not dump table data", NULL },
 	{ "triggers", 'G', 0, G_OPTION_ARG_NONE, &dump_triggers, "Dump triggers", NULL },
@@ -2723,7 +2725,6 @@ guint64 dump_table_data(MYSQL * conn, FILE *file, char *database, char *table, c
 		filename_prefix= split_filename[0];
 		g_free(split_filename);
 	}
-
 	
 	/* Ghm, not sure if this should be statement_size - but default isn't too big for now */
 	GString* statement = g_string_sized_new(statement_size);
@@ -2776,11 +2777,15 @@ guint64 dump_table_data(MYSQL * conn, FILE *file, char *database, char *table, c
 				}
 			}
 			if (complete_insert) {
-				if (insert_ignore) {
-					g_string_printf(statement, "INSERT IGNORE INTO `%s` (", table);
-				} else {
-					g_string_printf(statement, "INSERT INTO `%s` (", table);
-				}
+                if(replace_into) {
+                    g_string_printf(statement, "REPLACE INTO `%s` (", table);
+                } else {
+				    if (insert_ignore) {
+				    	g_string_printf(statement, "INSERT IGNORE INTO `%s` (", table);
+			    	} else {
+			    		g_string_printf(statement, "INSERT INTO `%s` (", table);
+			    	}
+                }
 				for (i = 0; i < num_fields; ++i) {
 					if (i > 0) {
 						g_string_append_c(statement, ',');
@@ -2789,11 +2794,15 @@ guint64 dump_table_data(MYSQL * conn, FILE *file, char *database, char *table, c
 				}
 				g_string_append(statement, ") VALUES");
 			} else {
-				if (insert_ignore) {
-					g_string_printf(statement, "INSERT IGNORE INTO `%s` VALUES", table);
-				} else {
-					g_string_printf(statement, "INSERT INTO `%s` VALUES", table);
-				}
+                if(replace_into) {
+                    g_string_printf(statement, "REPLACE INTO `%s` (", table);
+                } else {
+				    if (insert_ignore) {
+				    	g_string_printf(statement, "INSERT IGNORE INTO `%s` VALUES", table);
+		    		} else {
+			    		g_string_printf(statement, "INSERT INTO `%s` VALUES", table);
+			    	}
+                }
 			}
 			num_rows_st = 0;
 		}
@@ -2877,11 +2886,15 @@ guint64 dump_table_data(MYSQL * conn, FILE *file, char *database, char *table, c
 		}
 		else {
 			if (complete_insert) {
-				if (insert_ignore) {
-					g_string_printf(statement, "INSERT IGNORE INTO `%s` (", table);
-				} else {
-					g_string_printf(statement, "INSERT INTO `%s` (", table);
-				}
+                if(replace_into) {
+                    g_string_printf(statement, "REPLACE INTO `%s` VALUES", table);
+                } else {
+				    if (insert_ignore) {
+				    	g_string_printf(statement, "INSERT IGNORE INTO `%s` (", table);
+				    } else {
+				    	g_string_printf(statement, "INSERT INTO `%s` (", table);
+			    	}
+                }
 				for (i = 0; i < num_fields; ++i) {
 					if (i > 0) {
 						g_string_append_c(statement, ',');
@@ -2890,11 +2903,15 @@ guint64 dump_table_data(MYSQL * conn, FILE *file, char *database, char *table, c
 				}
 				g_string_append(statement, ") VALUES");
 			} else {
-				if (insert_ignore) {
-					g_string_printf(statement, "INSERT IGNORE INTO `%s` VALUES", table);
-				} else {
-					g_string_printf(statement, "INSERT INTO `%s` VALUES", table);
-				}
+                if(replace_into) {
+                     g_string_printf(statement, "REPLACE INTO `%s` VALUES", table);
+                } else {
+				    if (insert_ignore) {
+				    	g_string_printf(statement, "INSERT IGNORE INTO `%s` VALUES", table);
+				    } else {
+					    g_string_printf(statement, "INSERT INTO `%s` VALUES", table);
+			    	}
+                }
 			}
 			g_string_append(statement, statement_row->str);
 		}
