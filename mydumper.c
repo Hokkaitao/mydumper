@@ -84,6 +84,7 @@ char **ignore= NULL;
 gchar *tables_list= NULL;
 char **tables= NULL;
 GList *no_updated_tables=NULL;
+gchar *filter = NULL;
 
 #ifdef WITH_BINLOG
 gboolean need_binlogs= FALSE;
@@ -135,6 +136,7 @@ int errors;
 static GOptionEntry entries[] =
 {
 	{ "database", 'B', 0, G_OPTION_ARG_STRING, &db, "Database to dump", NULL },
+	{ "filter", 'Y', 0, G_OPTION_ARG_STRING, &filter, "Filter conditions", NULL },
 	{ "tables-list", 'T', 0, G_OPTION_ARG_STRING, &tables_list, "Comma delimited table list to dump (does not exclude regex option)", NULL },
 	{ "outputdir", 'o', 0, G_OPTION_ARG_FILENAME, &output_directory, "Directory to output files to",  NULL },
 	{ "statement-size", 's', 0, G_OPTION_ARG_INT, &statement_size, "Attempted size of INSERT statement in bytes, default 1000000", NULL},
@@ -2516,6 +2518,26 @@ void dump_view_data(MYSQL *conn, char *database, char *table, char *filename, ch
 
 void dump_table_data_file(MYSQL *conn, char *database, char *table, char *where, char *filename) {
 	void *outfile;
+    GString *filter_where = NULL;
+    char *fw = NULL;
+    if(where || filter) {
+        filter_where = g_string_new("(");
+    }
+    if(where) {
+        g_string_append(filter_where, where);
+    }
+    if(where && filter) {
+        g_string_append(filter_where, "AND");
+    }
+    if(filter) {
+        g_string_append(filter_where, filter);
+    }
+    if(where || filter) {
+        g_string_append(filter_where, ")");
+    }
+    if(filter_where) {
+        fw = filter_where->str;
+    }
 
 	if (!compress_output)
 		outfile = g_fopen(filename, "w");
@@ -2527,7 +2549,7 @@ void dump_table_data_file(MYSQL *conn, char *database, char *table, char *where,
 		errors++;
 		return;
 	}
-	guint64 rows_count = dump_table_data(conn, (FILE *)outfile, database, table, where, filename);
+	guint64 rows_count = dump_table_data(conn, (FILE *)outfile, database, table, fw, filename);
 	
 	if (!rows_count)
 		g_message("Empty table %s.%s", database,table);
