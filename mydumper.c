@@ -84,7 +84,11 @@ char **ignore= NULL;
 gchar *tables_list= NULL;
 char **tables= NULL;
 GList *no_updated_tables=NULL;
+
+GList *list_filter = NULL;
 gchar *filter = NULL;
+gchar **filter_array = NULL;
+gint global_filter = 0;
 
 #ifdef WITH_BINLOG
 gboolean need_binlogs= FALSE;
@@ -210,6 +214,13 @@ void start_dump(MYSQL *conn);
 MYSQL *create_main_connection();
 void *exec_thread(void *data);
 void write_log_file(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data);
+
+gint filter_compare(gconstpointer item1, gconstpointer item2) {
+    if(item1 == NULL || item2 == NULL) return -1;
+    gchar **filter_table = (gchar **)item1;
+    gchar *table = (gchar *)item2;
+    return strcmp(filter_table[0], table);
+}
 
 void no_log(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data) {
 	(void) log_domain;
@@ -812,6 +823,36 @@ MYSQL *reconnect_for_binlog(MYSQL *thrconn) {
 	return thrconn;
 }
 #endif
+
+void parse_table_filter(){
+    if(filter == NULL) return;
+    filter_array = g_strsplit(filter, ":", 0);
+    gint i=0;
+    gint j = 0;
+    gint illegal = 0;
+    for(i=0; filter_array[i]!=NULL;i++) {
+        gchar **table_filter = NULL;
+        table_filter = g_strsplit(filter_array[i], "@", 0);
+        for(j=0; table_filter[j] != NULL; j++) {
+            if(strlen(table_filter[j]) <= 0) {
+                illegal++;
+            }
+        }
+        list_filter = g_list_append(list_filter, table_filter);
+        if(j != 2) {
+            illegal++;
+        }
+    }
+    if(i == 1 && j == 1) {
+        global_filter = 1;
+        return;
+    }
+    if(illegal) {
+        g_critical("--Filter condition parameter is wrong, %s", filter);
+        exit(EXIT_FAILURE);
+    }
+}
+
 int main(int argc, char *argv[])
 {
 	GError *error = NULL;
@@ -839,6 +880,7 @@ int main(int argc, char *argv[])
 		exit (EXIT_SUCCESS);
 	}
 
+    parse_table_filter();
 	set_verbose(verbose);
 
 	time_t t;
@@ -2519,20 +2561,30 @@ void dump_view_data(MYSQL *conn, char *database, char *table, char *filename, ch
 void dump_table_data_file(MYSQL *conn, char *database, char *table, char *where, char *filename) {
 	void *outfile;
     GString *filter_where = NULL;
+    gchar *filter_true = NULL;
+    if(global_filter) {
+        filter_true = filter;
+    } else {
+        GList *lf = g_list_find_custom(list_filter, table, filter_compare);
+        if(lf != NULL) {
+            gchar **filter_table = (gchar **)lf->data;
+            filter_true = filter_table[1];
+        }
+    }
     char *fw = NULL;
-    if(where || filter) {
+    if(where || filter_true) {
         filter_where = g_string_new("(");
     }
     if(where) {
         g_string_append(filter_where, where);
     }
-    if(where && filter) {
+    if(where && filter_true) {
         g_string_append(filter_where, "AND");
     }
-    if(filter) {
-        g_string_append(filter_where, filter);
+    if(filter_true) {
+        g_string_append(filter_where, filter_true);
     }
-    if(where || filter) {
+    if(where || filter_true) {
         g_string_append(filter_where, ")");
     }
     if(filter_where) {
