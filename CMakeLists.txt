@@ -58,6 +58,11 @@ IF(RUN_CPPCHECK)
   add_cppcheck(myloader)
 ENDIF(RUN_CPPCHECK)
 
+OPTION(WITH_JSON "compile use MYSQL_TYPE_JSON in mysql5.7" OFF)
+IF(WITH_JSON)
+	add_definitions(-DUSE_JSON)
+	message(STATUS "use MYSQL_TYPE_JSON")
+ENDIF(WITH_JSON)
 
 MESSAGE(STATUS "------------------------------------------------")
 MESSAGE(STATUS "MYSQL_CONFIG = ${MYSQL_CONFIG}")
