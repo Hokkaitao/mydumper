@@ -2869,7 +2869,7 @@ guint64 dump_table_data(MYSQL * conn, FILE *file, char *database, char *table, c
 				g_string_append(statement, ") VALUES");
 			} else {
                 if(replace_into) {
-                    g_string_printf(statement, "REPLACE INTO `%s` (", table);
+                    g_string_printf(statement, "REPLACE INTO `%s` VALUES", table);
                 } else {
 				    if (insert_ignore) {
 				    	g_string_printf(statement, "INSERT IGNORE INTO `%s` VALUES", table);
