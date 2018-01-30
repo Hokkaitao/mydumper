@@ -29,17 +29,20 @@ MARK_AS_ADVANCED(CMAKE)
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/config.h)
 
+link_directories("/usr/lib64/mysql")
 
 if (WITH_BINLOG)
   add_executable(mydumper mydumper.c binlog.c server_detect.c g_unix_signal.c)
 else (WITH_BINLOG)
   add_executable(mydumper mydumper.c server_detect.c g_unix_signal.c)
 endif (WITH_BINLOG)
-target_link_libraries(mydumper ${MYSQL_LIBRARIES} ${GLIB2_LIBRARIES} ${GTHREAD2_LIBRARIES} ${PCRE_PCRE_LIBRARY} ${ZLIB_LIBRARIES})
+target_link_libraries(mydumper /usr/lib64/mysql/libmysqlclient.a -lm -lssl
+-lstdc++  ${GLIB2_LIBRARIES} ${GTHREAD2_LIBRARIES} ${PCRE_PCRE_LIBRARY} ${ZLIB_LIBRARIES})
 
 
 add_executable(myloader myloader.c)
-target_link_libraries(myloader ${MYSQL_LIBRARIES} ${GLIB2_LIBRARIES} ${GTHREAD2_LIBRARIES} ${PCRE_PCRE_LIBRARY} ${ZLIB_LIBRARIES})
+target_link_libraries(myloader  /usr/lib64/mysql/libmysqlclient.a -lm -lssl
+-lstdc++ ${GLIB2_LIBRARIES} ${GTHREAD2_LIBRARIES} ${PCRE_PCRE_LIBRARY} ${ZLIB_LIBRARIES})
 
 INSTALL(TARGETS mydumper myloader
   RUNTIME DESTINATION bin
