@@ -29,19 +29,25 @@ MARK_AS_ADVANCED(CMAKE)
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/config.h)
 
-link_directories("/usr/lib64/mysql")
+IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    link_directories("/usr/lib64/mysql")
+    set(MYSQL_LIB_PATH /usr/lib64/mysql)
+ELSE(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    link_directories("/usr/lib/mysql")
+    set(MYSQL_LIB_PATH /usr/lib/mysql)
+ENDIF(CMAKE_SIZEOF_VOID_P EQUAL 8)
 
 if (WITH_BINLOG)
   add_executable(mydumper mydumper.c binlog.c server_detect.c g_unix_signal.c)
 else (WITH_BINLOG)
   add_executable(mydumper mydumper.c server_detect.c g_unix_signal.c)
 endif (WITH_BINLOG)
-target_link_libraries(mydumper /usr/lib64/mysql/libmysqlclient.a -lm -lssl
+target_link_libraries(mydumper ${MYSQL_LIB_PATH}/libmysqlclient.a -lm -lssl
 -lstdc++  ${GLIB2_LIBRARIES} ${GTHREAD2_LIBRARIES} ${PCRE_PCRE_LIBRARY} ${ZLIB_LIBRARIES})
 
 
 add_executable(myloader myloader.c)
-target_link_libraries(myloader  /usr/lib64/mysql/libmysqlclient.a -lm -lssl
+target_link_libraries(myloader  ${MYSQL_LIB_PATH}/libmysqlclient.a -lm -lssl
 -lstdc++ ${GLIB2_LIBRARIES} ${GTHREAD2_LIBRARIES} ${PCRE_PCRE_LIBRARY} ${ZLIB_LIBRARIES})
 
 INSTALL(TARGETS mydumper myloader
@@ -73,6 +79,7 @@ MESSAGE(STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}")
 MESSAGE(STATUS "BUILD_DOCS = ${BUILD_DOCS}")
 MESSAGE(STATUS "WITH_BINLOG = ${WITH_BINLOG}")
 MESSAGE(STATUS "RUN_CPPCHECK = ${RUN_CPPCHECK}")
+MESSAGE(STATUS "MYSQL_LIB_PATH = ${MYSQL_LIB_PATH}")
 MESSAGE(STATUS "Change a values with: cmake -D<Variable>=<Value>")
 MESSAGE(STATUS "------------------------------------------------")
 MESSAGE(STATUS)
