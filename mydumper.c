@@ -2965,7 +2965,7 @@ guint64 dump_table_data(MYSQL * conn, FILE *file, char *database, char *table, c
 		else {
 			if (complete_insert) {
                 if(replace_into) {
-                    g_string_printf(statement, "REPLACE INTO `%s` VALUES", table);
+                    g_string_printf(statement, "REPLACE INTO `%s` (", table);
                 } else {
 				    if (insert_ignore) {
 				    	g_string_printf(statement, "INSERT IGNORE INTO `%s` (", table);
