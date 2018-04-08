@@ -826,7 +826,7 @@ MYSQL *reconnect_for_binlog(MYSQL *thrconn) {
 
 void parse_table_filter(){
     if(filter == NULL) return;
-    filter_array = g_strsplit(filter, ":", 0);
+    filter_array = g_strsplit(filter, "$", 0);
     gint i=0;
     gint j = 0;
     gint illegal = 0;
